@@ -2,6 +2,8 @@
 
 # 概要
 
+いくつかのコマンドを実行するだけで、一切設定なしでローカルでマストドンを起動することができます。
+
 v2.4.3 の mastodon は [productionモードでは https 接続が強制されており、](https://github.com/tootsuite/mastodon/blob/v2.4.3/.env.production.sample#L22)。簡単に動作を確認することができません。
 また、mastodon Docker版では developmentモードがうまく動かず、[推薦もされていません](https://github.com/tootsuite/documentation/blob/master/Running-Mastodon/Development-guide.md)。
 
@@ -10,7 +12,7 @@ v2.4.3 の mastodon は [productionモードでは https 接続が強制され�
 また、マストドンが送信するすべてのメールは、[MailCatcher](https://mailcatcher.me)でのみ確認することができます。
 外部には配送されませんので、メールサーバの設定なども不要です。
 
-データファールはすべてDocker の Named Volumeに保存されます。 `docker volume ls` で確認できます。
+データはすべてDocker の Named Volumeに保存されます。 `docker volume ls` で確認できます。
 
 [ailispaw](https://github.com/ailispaw)さん、ありがとうございます！
 
@@ -23,7 +25,7 @@ v2.4.3 の mastodon は [productionモードでは https 接続が強制され�
 
 [DockerCE for Mac(18.06.0-ce-mac70)](https://store.docker.com/editions/community/docker-ce-desktop-mac)にて動作確認しています。
 
-このツールでの外部への公開は想定されておりませんので、実験用としてお使いください。
+このツールでの外部への公開や連携は想定されておりませんので、実験用としてお使いください。
 
 # 構築と起動
 
@@ -34,7 +36,7 @@ v2.4.3 の mastodon は [productionモードでは https 接続が強制され�
 
 以下のコマンドを実行すると、取得と構築が行われます。
 .env.production も初期化されますのでご注意ください。
-すでに作っている場合は後述のdestroyで破棄する必要があります。
+すでに作っている場合は後述のdestroyで破棄しておく必要があります。
 
 	$ ./setup.sh create
 
@@ -42,7 +44,7 @@ v2.4.3 の mastodon は [productionモードでは https 接続が強制され�
 
 ## 起動
 
-でマストドン起動です。
+以下のコマンドでマストドン起動します。
 
 	$ docker-compose up -d
 
@@ -91,4 +93,5 @@ v2.4.3 の mastodon は [productionモードでは https 接続が強制され�
 * [Mastodon: Docker](https://github.com/tootsuite/documentation/blob/master/Running-Mastodon/Docker-Guide.md)
 * [Mastodon: Mastodon Production Guide](https://github.com/tootsuite/documentation/blob/master/Running-Mastodon/Production-guide.md)
 * [DockerHub: mastodon](https://hub.docker.com/r/gargron/mastodon/)
+
 
