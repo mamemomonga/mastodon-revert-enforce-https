@@ -1,0 +1,109 @@
+version: '3'
+
+volumes:
+  postgres: { external: { name: '${COMPOSE_PROJECT_NAME}-postgres' }}
+  redis:    { external: { name: '${COMPOSE_PROJECT_NAME}-redis'    }}
+  assets:   { external: { name: '${COMPOSE_PROJECT_NAME}-assets'   }}
+  packs:    { external: { name: '${COMPOSE_PROJECT_NAME}-packs'    }}
+  system:   { external: { name: '${COMPOSE_PROJECT_NAME}-system'   }}
+
+networks:
+  # external_network: { external: { name: 'mstdn' }}
+  external_network:
+  internal_network:
+    internal: true
+
+services:
+
+  db:
+    restart: always
+    image: postgres:9.6-alpine
+    networks:
+      - internal_network
+    volumes:
+      - postgres:/var/lib/postgresql/data
+
+  redis:
+    restart: always
+    image: redis:4.0-alpine
+    networks:
+      - internal_network
+    volumes:
+      - redis:/data
+
+  web:
+    # image: tootsuite/mastodon:v2.4.3
+    build: mstdn-revert-enforce-https
+ 
+    restart: always
+    env_file: .env.production
+    command: bash -c "rm -f /mastodon/tmp/pids/server.pid; bundle exec rails s -p 3000 -b '0.0.0.0'"
+    networks:
+      - external_network
+      - internal_network
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - db
+      - redis
+      - mailcatcher
+
+    volumes:
+      - assets:/mastodon/public/assets
+      - packs:/mastodon/public/packs
+      - system:/mastodon/public/system
+
+  streaming:
+    # image: tootsuite/mastodon:v2.4.3
+    build: mstdn-revert-enforce-https
+
+    restart: always
+    env_file: .env.production
+    command: yarn start
+    networks:
+      - external_network
+      - internal_network
+
+    ports:
+      - "127.0.0.1:4000:4000"
+
+    volumes:
+      - assets:/mastodon/public/assets
+      - packs:/mastodon/public/packs
+      - system:/mastodon/public/system
+
+    depends_on:
+      - db
+      - redis
+      - mailcatcher
+
+  sidekiq:
+    # image: tootsuite/mastodon:v2.4.3
+    build: mstdn-revert-enforce-https
+
+    restart: always
+    env_file: .env.production
+    command: bundle exec sidekiq -q default -q mailers -q pull -q push
+    depends_on:
+      - db
+      - redis
+      - mailcatcher
+
+    networks:
+      - external_network
+      - internal_network
+    volumes:
+      - assets:/mastodon/public/assets
+      - packs:/mastodon/public/packs
+      - system:/mastodon/public/system
+
+  mailcatcher:
+    image: yappabe/mailcatcher
+    restart: always
+    networks:
+      - external_network
+      - internal_network
+    ports:
+      - "1025:1025"
+      - "1080:1080"
+
