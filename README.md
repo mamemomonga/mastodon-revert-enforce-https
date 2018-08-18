@@ -23,32 +23,33 @@ v2.4.3 の mastodon は [productionモードでは https 接続が強制され�
 * Bash
 * Git
 
-[DockerCE for Mac(18.06.0-ce-mac70)](https://store.docker.com/editions/community/docker-ce-desktop-mac)にて動作確認しています。
+* [DockerCE for Mac(18.06.0-ce-mac70)](https://store.docker.com/editions/community/docker-ce-desktop-mac)
+* Ubuntu 18.04, Docker 18.06.0-ce, Docker-Compose 1.21.2
 
-このツールでの外部への公開や連携は想定されておりませんので、実験用としてお使いください。
+にて動作確認しています。
+
+このツールでの外部への公開や連携は想定されておりませんので動作テスト用としてお使いください。
 
 # 構築と起動
+
+## 取得
 
 このリポジトリを取得します。
 
 	$ git clone git@github.com:mamemomonga/mstdn-revert-enforce-https.git
 	$ cd mstdn-revert-enforce-https
 
+## 作成
+
 以下のコマンドを実行すると、取得と構築が行われます。
-.env.production も初期化されますのでご注意ください。
-すでに作っている場合は後述のdestroyで破棄しておく必要があります。
+.env.production も含め全て初期化されますのでご注意ください。
+リストアの場合事前にcreateする必要はありません。
 
 	$ ./setup.sh create
 
-**SUCCESS** と表示されたら構築完了です。
+**SUCCESS** と表示されたら構築完了でマストドンが起動されます。
 
-## 起動
-
-以下のコマンドでマストドン起動します。
-
-	$ docker-compose up -d
-
-## マストドンの登録と閲覧
+## 登録とログイン
 
 [http://localhost:3000/](http://localhost:3000/) にアクセスしてユーザ登録を行います。
 
@@ -67,25 +68,51 @@ v2.4.3 の mastodon は [productionモードでは https 接続が強制され�
 
 	$ docker-compose run --rm web rails mastodon:make_admin USERNAME=mamemomonga
 
+## 削除
+
+すべてのデータが削除されます
+
+	$ ./setup.sh destroy
+
+### ログ
+
+	$ docker-compose logs
+
+### 終了
+
+	$ docker-compose down
+
+### 起動
+
+	$ docker-compose up -d
+
+# バックアップとリストア
+
+## バックアップ
+
+/var/backup 以下へデータをバックアップします。redisはバックアップしません(HTLは消えます)。
+
+	$ ./setup.sh backup
+
+## リストア
+
+/var/backup 以下のデータをリカバリします。既存のデータはすべて削除されます。
+
+	$ ./setup.sh restore
+
+# 便利なコマンド
+
 ## rails コマンドのヘルプ参照
 
 マストドン用のいろんなコマンドがあるみたいです。以下の方法で確認できます。
 
 	$ docker-compose run --rm web rails --help
 
-## ログの表示
+## psql
 
-	$ docker-compose logs
+コンテナが動作している状態で実行します
 
-## 終了
-
-	$ docker-compose down
-
-## 削除
-
-すべてのデータが削除されます
-
-	$ ./setup.sh destroy
+	$ docker-compose exec db psql -U postgres postgres
 
 # 参考資料
 

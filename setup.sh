@@ -3,6 +3,7 @@ set -eu
 
 BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"  && pwd )"
 PERL='docker run --rm -i perl:5-slim perl'
+docker run --rm -i perl:5-slim perl -E ''
 
 source $BASEDIR/.env
 
@@ -15,12 +16,22 @@ function do_create_volumes {
 		echo -n "create named volume: "
 		docker volume create $volname
 	done
+
+	MUID=$( docker-compose run --rm web id -u | $PERL -npe 's/\r//g' )
+	MGID=$( docker-compose run --rm web id -g | $PERL -npe 's/\r//g' )
+
+	docker run --rm -i \
+		-v $COMPOSE_PROJECT_NAME'-assets:/m/assets' \
+		-v $COMPOSE_PROJECT_NAME'-packs:/m/packs' \
+		-v $COMPOSE_PROJECT_NAME'-system:/m/system' \
+		alpine:3.8 chown -v -R $MUID:$MGID /m
+
 }
 
 function do_remove_volumes {
 	for i in postgres redis assets packs system; do
 		local volname=$COMPOSE_PROJECT_NAME'-'$i
-		echo -n "remove named volome: "
+		echo -n "remove named volume: "
 		docker volume rm $volname || true
 	done
 }
@@ -44,7 +55,20 @@ function do_repos {
 	
 }
 
-function do_env {
+function do_create {
+	rm -rf  mstdn-revert-enforce-https/assets
+	mkdir -p mstdn-revert-enforce-https/assets
+
+	cp -rf repos/mastodon-barge/patches mstdn-revert-enforce-https/assets/
+	cp -f  repos/mastodon/.env.production.sample mstdn-revert-enforce-https/assets/
+
+	cp -f  repos/mastodon/.env.production.sample .env.production
+
+	docker-compose build
+
+	do_create_volumes
+	docker-compose run --rm web rake --version
+
 	cp -f  repos/mastodon/.env.production.sample .env.production
 
 	cat >> .env.production << 'EOS'
@@ -80,32 +104,51 @@ EOS
 
 }
 
-function do_create {
-	rm -rf  mstdn-revert-enforce-https/assets
-	mkdir -p mstdn-revert-enforce-https/assets
+function do_init {
+	docker-compose run --rm web rails db:setup SAFETY_ASSURED=1
+	docker-compose run --rm web rails assets:precompile
+}
 
-	cp -rf repos/mastodon-barge/patches mstdn-revert-enforce-https/assets/
-	cp -f  repos/mastodon/.env.production.sample mstdn-revert-enforce-https/assets/
+do_backup() {
 
-	cp -f  repos/mastodon/.env.production.sample .env.production
-	do_create_volumes
-	docker-compose build
-	docker-compose run --rm web rake --version
+	if [ -z $(docker ps -q -f "id=$(docker-compose ps -q db)" -f "status=running") ]; then
+		echo "database not working."
+		exit 1
+	fi
 
-	do_env
+	rm -rf var/backup
+	mkdir -p var/backup
+
+	docker-compose exec db pg_dump -U postgres postgres > var/backup/mastodon.sql
+
+	for i in assets packs system; do
+		docker run --rm -i -v $COMPOSE_PROJECT_NAME'-'$i:/m/$i \
+			alpine:3.8 tar cvC /m $i > var/backup/$i.tar
+	done
+
+	cp -vf .env.production var/backup
+
+}
+
+do_restore() {
+
+	docker-compose up -d db
+	DB_CTNR=$(docker ps -q -f "id=$(docker-compose ps -q db)" -f "status=running")
+	cat var/backup/mastodon.sql | docker exec -i $DB_CTNR psql -U postgres
 
 	MUID=$( docker-compose run --rm web id -u | $PERL -npe 's/\r//g' )
 	MGID=$( docker-compose run --rm web id -g | $PERL -npe 's/\r//g' )
 
-	docker run --rm -i \
-		-v $COMPOSE_PROJECT_NAME'-assets:/m/assets' \
-		-v $COMPOSE_PROJECT_NAME'-packs:/m/packs' \
-		-v $COMPOSE_PROJECT_NAME'-system:/m/system' \
-		alpine:3.8 chown -v -R $MUID:$MGID /m
- 
-	docker-compose run --rm web rails db:setup SAFETY_ASSURED=1
-	docker-compose run --rm web rails assets:precompile
+	for i in assets packs system; do
+		cat var/backup/$i.tar | \
+			docker run --rm -i -v $COMPOSE_PROJECT_NAME'-'$i:/m/$i \
+			alpine:3.8 sh -c "tar xvC /m; chown -R $MUID:$MGID /m/$i"
+	done
+
+	cp -vf var/backup/.env.production .
+
 }
+
 
 function do_destroy {
 	docker-compose down || true
@@ -117,17 +160,36 @@ function do_destroy {
 case "${1:-}" in
 
 	"create"  )
+		do_destroy
 		do_repos
 		do_create
+		do_init
+		docker-compose up -d
+		echo " *** SUCCESS ***"
+		;;
+
+	"restore" )
+		do_destroy
+		do_repos
+		do_create
+		do_restore
+		docker-compose up -d
+		echo " *** SUCCESS ***"
+		;;
+
+	"backup" )
+		do_backup
+		docker-compose up -d
 		echo " *** SUCCESS ***"
 		;;
 
 	"destroy" )
 		do_destroy
+		echo " *** SUCCESS ***"
 		;;
 
 	*  )
-		echo "USAGE: $0 [ create | destroy ]"
+		echo "USAGE: $0 [ create | destroy | restore | backup ]"
 		exit 1
 		;;
 
