@@ -45,7 +45,7 @@ v2.4.3 の mastodon は [productionモードでは https 接続が強制され�
 .env.production も含め全て初期化されますのでご注意ください。
 リストアの場合事前にcreateする必要はありません。
 
-	$ ./setup.sh create
+	$ ./mastodon.sh create
 
 **SUCCESS** と表示されたら構築完了でマストドンが起動されます。
 
@@ -66,25 +66,8 @@ v2.4.3 の mastodon は [productionモードでは https 接続が強制され�
 
 以下のコマンドを実行してください。mamemomongaの部分を対象のユーザに置き換えてください。
 
-	$ docker-compose run --rm web rails mastodon:make_admin USERNAME=mamemomonga
+	$ ./mastodon.sh rails mastodon:make_admin USERNAME=mamemomonga
 
-## 削除
-
-すべてのデータが削除されます
-
-	$ ./setup.sh destroy
-
-### ログ
-
-	$ docker-compose logs
-
-### 終了
-
-	$ docker-compose down
-
-### 起動
-
-	$ docker-compose up -d
 
 # バックアップとリストア
 
@@ -92,27 +75,38 @@ v2.4.3 の mastodon は [productionモードでは https 接続が強制され�
 
 /var/backup 以下へデータをバックアップします。redisはバックアップしません(HTLは消えます)。
 
-	$ ./setup.sh backup
+	$ ./mastodon.sh backup
 
 ## リストア
 
 /var/backup 以下のデータをリカバリします。既存のデータはすべて削除されます。
 
-	$ ./setup.sh restore
+	$ ./mastodon.sh restore
 
 # 便利なコマンド
 
-## rails コマンドのヘルプ参照
+# mastodon.sh コマンド一覧
+
+
+ コマンド              | 内容
+-----------------------|----------
+ ./mastodon.sh         | ヘルプ
+ ./mastodon.sh create  | 新規作成 
+ ./mastodon.sh destroy | 破棄
+ ./mastodon.sh up      | 起動
+ ./mastodon.sh down    | 停止
+ ./mastodon.sh backup  | バックアップ
+ ./mastodon.sh restore | 作成とリストア
+ ./mastodon.sh shell   | web の /mastodon に入る
+ ./mastodon.sh psql    | db の psql に入る
+ ./mastodon.sh psql    | logを表示する
+ ./mastodon.sh rails ...  | rails のコマンドを実行する
+
+### rails コマンドのヘルプ参照
 
 マストドン用のいろんなコマンドがあるみたいです。以下の方法で確認できます。
 
-	$ docker-compose run --rm web rails --help
-
-## psql
-
-コンテナが動作している状態で実行します
-
-	$ docker-compose exec db psql -U postgres postgres
+	$ ./mastodon.sh rails --help
 
 # 参考資料
 

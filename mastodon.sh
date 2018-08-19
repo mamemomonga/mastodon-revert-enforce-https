@@ -170,8 +170,38 @@ case "${1:-}" in
 		echo " *** SUCCESS ***"
 		;;
 
+	"up" )
+		exec docker-compose up -d
+		;;
+
+	"down" )
+		exec docker-compose down
+		;;
+
+	"shell" )
+		exec docker-compose exec web sh
+		;;
+
+	"psql" )
+		exec docker-compose exec db psql -U postgres postgres
+		;;
+
+	"rails" )
+		shift
+		exec docker-compose exec web rails $@
+		;;
+
+	"logs" )
+		exec docker-compose logs -f
+		;;
+
 	*  )
-		echo "USAGE: $0 [ create | destroy | restore | backup ]"
+		echo "USAGE:"
+	   	echo "  $0 [ create | destroy ]"
+	   	echo "  $0 [ backup | restore ]"
+	   	echo "  $0 [ up | down ]"
+	   	echo "  $0 [ shell | psql | logs ]"
+	   	echo "  $0 rails [rails commands]"
 		exit 1
 		;;
 
