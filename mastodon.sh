@@ -1,11 +1,20 @@
 #!/bin/bash
-set -eu
+set -eux
 
 BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"  && pwd )"
 PERL='docker run --rm -i perl:5-slim perl'
-docker run --rm -i perl:5-slim perl -E ''
+ALPINE="alpine:3.8"
 
 source $BASEDIR/.env
+
+docker run --rm -i perl:5-slim perl -E ''
+docker run --rm $ALPINE test true
+
+if [ -n ${DOCKER_COMPOSE_CONTAINER_VERSION:-} ]; then
+	DOCKER_COMPOSE='docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v '$BASEDIR':/rootfs'$BASEDIR' -w=/rootfs'$BASEDIR' docker/compose:'$DOCKER_COMPOSE_CONTAINER_VERSION
+else
+	DOCKER_COMPOSE='docker-compose'
+fi
 
 cd $BASEDIR
 
@@ -16,14 +25,14 @@ function do_create_volumes {
 		docker volume create $volname
 	done
 
-	MUID=$( docker-compose run --rm web id -u | $PERL -npe 's/\r//g' )
-	MGID=$( docker-compose run --rm web id -g | $PERL -npe 's/\r//g' )
+	MUID=$( $DOCKER_COMPOSE run --rm web id -u | $PERL -npe 's/\r//g' )
+	MGID=$( $DOCKER_COMPOSE run --rm web id -g | $PERL -npe 's/\r//g' )
 
 	docker run --rm -i \
 		-v $COMPOSE_PROJECT_NAME'-assets:/m/assets' \
 		-v $COMPOSE_PROJECT_NAME'-packs:/m/packs' \
 		-v $COMPOSE_PROJECT_NAME'-system:/m/system' \
-		alpine:3.8 chown -v -R $MUID:$MGID /m
+		$ALPINE chown -v -R $MUID:$MGID /m
 
 }
 
@@ -46,10 +55,11 @@ function do_create {
 
 	cp -f  .env.production.sample .env.production
 
-	docker-compose build
+	$DOCKER_COMPOSE build
+	$DOCKER_COMPOSE pull
 
 	do_create_volumes
-	docker-compose run --rm web rake --version
+	$DOCKER_COMPOSE run --rm web rake --version
 
 	cp -f .env.production.sample .env.production
 
@@ -67,8 +77,8 @@ SMTP_AUTH_METHOD=none
 
 EOS
 
-	local SECRET_KEY_BASE=$( docker-compose run --rm web rake secret | $PERL -npe 's/\r//g' )
-	local OTP_SECRET=$( docker-compose run --rm web rake secret | $PERL -npe 's/\r//g' )
+	local SECRET_KEY_BASE=$( $DOCKER_COMPOSE run --rm web rake secret | $PERL -npe 's/\r//g' )
+	local OTP_SECRET=$( $DOCKER_COMPOSE run --rm web rake secret | $PERL -npe 's/\r//g' )
 
 	cat .env.production | $PERL -pE " \
 		s/^SECRET_KEY_BASE=/SECRET_KEY_BASE=$SECRET_KEY_BASE/m; \
@@ -76,7 +86,7 @@ EOS
 	" > .env.production.tmp
 	mv -f .env.production.tmp .env.production
 
-	eval $( docker-compose run --rm web rake mastodon:webpush:generate_vapid_key | $PERL -npe 's/\r//sg; s/^(.+)/local $1/mg' )
+	eval $( $DOCKER_COMPOSE run --rm web rake mastodon:webpush:generate_vapid_key | $PERL -npe 's/\r//sg; s/^(.+)/local $1/mg' )
 
 	cat .env.production | $PERL -pE " \
 		s/^VAPID_PRIVATE_KEY=/VAPID_PRIVATE_KEY=$VAPID_PRIVATE_KEY/m; \
@@ -87,13 +97,13 @@ EOS
 }
 
 function do_init {
-	docker-compose run --rm web rails db:setup SAFETY_ASSURED=1
-	docker-compose run --rm web rails assets:precompile
+	$DOCKER_COMPOSE run --rm web rails db:setup SAFETY_ASSURED=1
+	$DOCKER_COMPOSE run --rm web rails assets:precompile
 }
 
 do_backup() {
 
-	if [ -z $(docker ps -q -f "id=$(docker-compose ps -q db)" -f "status=running") ]; then
+	if [ -z $(docker ps -q -f "id=$($DOCKER_COMPOSE ps -q db)" -f "status=running") ]; then
 		echo "database not working."
 		exit 1
 	fi
@@ -101,11 +111,11 @@ do_backup() {
 	rm -rf var/backup
 	mkdir -p var/backup
 
-	docker-compose exec db pg_dump -U postgres postgres > var/backup/mastodon.sql
+	$DOCKER_COMPOSE exec db pg_dump -U postgres postgres > var/backup/mastodon.sql
 
 	for i in assets packs system; do
 		docker run --rm -i -v $COMPOSE_PROJECT_NAME'-'$i:/m/$i \
-			alpine:3.8 tar cvC /m $i > var/backup/$i.tar
+			$ALPINE tar cvC /m $i > var/backup/$i.tar
 	done
 
 	cp -vf .env.production var/backup
@@ -114,17 +124,17 @@ do_backup() {
 
 do_restore() {
 
-	docker-compose up -d db
-	DB_CTNR=$(docker ps -q -f "id=$(docker-compose ps -q db)" -f "status=running")
+	$DOCKER_COMPOSE up -d db
+	DB_CTNR=$(docker ps -q -f "id=$($DOCKER_COMPOSE ps -q db)" -f "status=running")
 	cat var/backup/mastodon.sql | docker exec -i $DB_CTNR psql -U postgres
 
-	MUID=$( docker-compose run --rm web id -u | $PERL -npe 's/\r//g' )
-	MGID=$( docker-compose run --rm web id -g | $PERL -npe 's/\r//g' )
+	MUID=$( $DOCKER_COMPOSE run --rm web id -u | $PERL -npe 's/\r//g' )
+	MGID=$( $DOCKER_COMPOSE run --rm web id -g | $PERL -npe 's/\r//g' )
 
 	for i in assets packs system; do
 		cat var/backup/$i.tar | \
 			docker run --rm -i -v $COMPOSE_PROJECT_NAME'-'$i:/m/$i \
-			alpine:3.8 sh -c "tar xvC /m; chown -R $MUID:$MGID /m/$i"
+			$ALPINE sh -c "tar xvC /m; chown -R $MUID:$MGID /m/$i"
 	done
 
 	cp -vf var/backup/.env.production .
@@ -134,7 +144,7 @@ do_restore() {
 
 function do_destroy {
 	if [ -e .env.production ]; then
-		docker-compose down || true
+		$DOCKER_COMPOSE down || true
 	fi
 	sleep 1
 	do_remove_volumes
@@ -147,7 +157,7 @@ case "${1:-}" in
 		do_destroy
 		do_create
 		do_init
-		docker-compose up -d
+		$DOCKER_COMPOSE up -d
 		echo " *** SUCCESS ***"
 		;;
 
@@ -155,13 +165,13 @@ case "${1:-}" in
 		do_destroy
 		do_create
 		do_restore
-		docker-compose up -d
+		$DOCKER_COMPOSE up -d
 		echo " *** SUCCESS ***"
 		;;
 
 	"backup" )
 		do_backup
-		docker-compose up -d
+		$DOCKER_COMPOSE up -d
 		echo " *** SUCCESS ***"
 		;;
 
@@ -171,28 +181,28 @@ case "${1:-}" in
 		;;
 
 	"up" )
-		exec docker-compose up -d
+		exec $DOCKER_COMPOSE up -d
 		;;
 
 	"down" )
-		exec docker-compose down
+		exec $DOCKER_COMPOSE down
 		;;
 
 	"shell" )
-		exec docker-compose exec web sh
+		exec $DOCKER_COMPOSE exec web sh
 		;;
 
 	"psql" )
-		exec docker-compose exec db psql -U postgres postgres
+		exec $DOCKER_COMPOSE exec db psql -U postgres postgres
 		;;
 
 	"rails" )
 		shift
-		exec docker-compose exec web rails $@
+		exec $DOCKER_COMPOSE exec web rails $@
 		;;
 
 	"logs" )
-		exec docker-compose logs -f
+		exec $DOCKER_COMPOSE logs -f
 		;;
 
 	*  )
