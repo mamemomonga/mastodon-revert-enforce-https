@@ -38,7 +38,7 @@ v2.4.3 の mastodon は [productionモードでは https 接続が強制され�
 このリポジトリを取得します。
 
 	$ git clone https://github.com/mamemomonga/mstdn-docker.git
-	$ cd mstdn-revert-enforce-https
+	$ cd mstdn-docker
 
 ## 準備
 
