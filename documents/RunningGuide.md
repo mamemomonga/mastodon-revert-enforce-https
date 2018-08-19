@@ -19,7 +19,7 @@
 
 	$ git clone https://github.com/mamemomonga/mstdn-revert-enforce-https.git
 	$ cd mstdn-revert-enforce-https
-	$ cp docker-compose/mstdn-revert-enforce-https.yml docker-compose.yml
+	$ ./mastodon.sh init revert-enforce-https
 	$ ./mastodon.sh create
 
 別ターミナルから実行
@@ -36,7 +36,7 @@ COSでは mastodon.sh を ./mastodon.sh では実行できません。bash masto
 
 	$ git clone https://github.com/mamemomonga/mstdn-revert-enforce-https.git
 	$ cd mstdn-revert-enforce-https
-	$ cp docker-compose/mstdn-revert-enforce-https.yml docker-compose.yml
+	$ bash mastodon.sh init revert-enforce-https
 	$ bash mastodon.sh create
 
 別ターミナルから実行
