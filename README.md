@@ -45,7 +45,7 @@ v2.4.3 の mastodon は [productionモードでは https 接続が強制され�
 
 docker-compose.yml をコピーします
 
-	$ cp compose/mstdn-revert-enforce-https.yml docker-compose.yml
+	$ cp docker-compose/mstdn-revert-enforce-https.yml docker-compose.yml
 
 ## 作成
 
