@@ -19,14 +19,13 @@ v2.4.3 の mastodon は [productionモードでは https 接続が強制され�
 # 必要な環境
 
 * Docker
-* Docker Compose
 * bash
 * curl
 
 ## 確認環境
 
 * [DockerCE for Mac(18.06.0-ce-mac70)](https://store.docker.com/editions/community/docker-ce-desktop-mac)
-* Ubuntu 18.04, Docker 18.06.0-ce, Docker-Compose 1.21.2
+* Ubuntu 18.04, Docker 18.06.0-ce
 
 にて動作確認しています。
 
