@@ -5,10 +5,10 @@
 # Container-Optimized OS 68-10718.86.0 stable
 
 * mastodon.sh は ./mastodon.sh では実行できません。bash mastodon.sh で実行してください。
+* GCEでは公開鍵を登録し、そのキーのユーザでインスタンスにSSHでログインします。
 
-公開鍵を登録し、そのキーでインスタンスにログインしてください。
+以下は実行までの流れです。
 
-	$ ssh [ユーザ名]@[パスワード]
 	$ git clone https://github.com/mamemomonga/mstdn-revert-enforce-https.git
 	$ cd mstdn-revert-enforce-https
 	$ cp docker-compose/mstdn-revert-enforce-https.yml docker-compose.yml
