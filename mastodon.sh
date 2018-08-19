@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eux
+set -eu
 
 BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"  && pwd )"
 PERL='docker run --rm -i perl:5-slim perl'
