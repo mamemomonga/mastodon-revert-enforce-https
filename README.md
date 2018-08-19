@@ -2,7 +2,7 @@
 
 # 概要
 
-いくつかのコマンドを実行するだけで、一切設定なしでローカルでマストドンを起動することができます。
+いくつかのコマンドを実行するだけで、ほぼ設定なしでローカルでマストドンを起動することができます。
 
 v2.4.3 の mastodon は [productionモードでは https 接続が強制されており、](https://github.com/tootsuite/mastodon/blob/v2.4.3/.env.production.sample#L22)。簡単に動作を確認することができません。
 また、mastodon Docker版では developmentモードがうまく動かず、[推薦もされていません](https://github.com/tootsuite/documentation/blob/master/Running-Mastodon/Development-guide.md)。
@@ -20,8 +20,10 @@ v2.4.3 の mastodon は [productionモードでは https 接続が強制され�
 
 * Docker
 * Docker Compose
-* Bash
-* Git
+* bash
+* curl
+
+## 確認環境
 
 * [DockerCE for Mac(18.06.0-ce-mac70)](https://store.docker.com/editions/community/docker-ce-desktop-mac)
 * Ubuntu 18.04, Docker 18.06.0-ce, Docker-Compose 1.21.2
@@ -38,6 +40,12 @@ v2.4.3 の mastodon は [productionモードでは https 接続が強制され�
 
 	$ git clone git@github.com:mamemomonga/mstdn-revert-enforce-https.git
 	$ cd mstdn-revert-enforce-https
+
+## 準備
+
+docker-compose.yml をコピーします
+
+	$ cp compose/mstdn-revert-enforce-https.yml docker-compose.yml
 
 ## 作成
 
