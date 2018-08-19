@@ -17,7 +17,7 @@
 
 ## マストドン開始
 
-	$ git clone https://github.com/mamemomonga/mstdn-revert-enforce-https.git
+	$ git clone https://github.com/mamemomonga/mstdn-docker.git
 	$ cd mstdn-revert-enforce-https
 	$ ./mastodon.sh init revert-enforce-https
 	$ ./mastodon.sh create
@@ -34,7 +34,7 @@ COSでは mastodon.sh を ./mastodon.sh では実行できません。bash masto
 
 以下は実行までの流れです。
 
-	$ git clone https://github.com/mamemomonga/mstdn-revert-enforce-https.git
+	$ git clone https://github.com/mamemomonga/mstdn-docker.git
 	$ cd mstdn-revert-enforce-https
 	$ bash mastodon.sh init revert-enforce-https
 	$ bash mastodon.sh create
