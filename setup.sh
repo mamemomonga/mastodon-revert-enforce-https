@@ -8,7 +8,6 @@ docker run --rm -i perl:5-slim perl -E ''
 source $BASEDIR/.env
 
 cd $BASEDIR
-mkdir -p repos
 
 function do_create_volumes {
 	for i in postgres redis assets packs system; do
@@ -36,40 +35,23 @@ function do_remove_volumes {
 	done
 }
 
-function do_repos {
-	if [ ! -d 'repos/mastodon' ]; then
-		cd repos
-		git clone https://github.com/tootsuite/mastodon.git
-		cd mastodon
-		git checkout -b $MSTDN_VER $MSTDN_VER
-		cd ../..
-	fi
-	
-	if [ ! -d 'repos/mastodon-barge' ]; then
-		cd repos
-		git clone https://github.com/ailispaw/mastodon-barge.git
-		cd mastodon-barge
-		git checkout -b $MSTDN_VER $MSTDN_BERGE_REF 
-		cd ../..
-	fi
-	
-}
 
 function do_create {
 	rm -rf  mstdn-revert-enforce-https/assets
 	mkdir -p mstdn-revert-enforce-https/assets
 
-	cp -rf repos/mastodon-barge/patches mstdn-revert-enforce-https/assets/
-	cp -f  repos/mastodon/.env.production.sample mstdn-revert-enforce-https/assets/
+	if [ ! -e .env.production.sample ]; then
+		curl https://raw.githubusercontent.com/tootsuite/mastodon/$MSTDN_VER/.env.production.sample > .env.production.sample
+	fi
 
-	cp -f  repos/mastodon/.env.production.sample .env.production
+	cp -f  .env.production.sample .env.production
 
 	docker-compose build
 
 	do_create_volumes
 	docker-compose run --rm web rake --version
 
-	cp -f  repos/mastodon/.env.production.sample .env.production
+	cp -f .env.production.sample .env.production
 
 	cat >> .env.production << 'EOS'
 LOCAL_DOMAIN=127.0.0.1:3000
@@ -151,7 +133,9 @@ do_restore() {
 
 
 function do_destroy {
-	docker-compose down || true
+	if [ -e .env.production ]; then
+		docker-compose down || true
+	fi
 	sleep 1
 	do_remove_volumes
 }
@@ -161,7 +145,6 @@ case "${1:-}" in
 
 	"create"  )
 		do_destroy
-		do_repos
 		do_create
 		do_init
 		docker-compose up -d
@@ -170,7 +153,6 @@ case "${1:-}" in
 
 	"restore" )
 		do_destroy
-		do_repos
 		do_create
 		do_restore
 		docker-compose up -d
