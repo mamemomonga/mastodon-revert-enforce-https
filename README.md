@@ -44,7 +44,7 @@ v2.4.3 の mastodon は [productionモードでは https 接続が強制され�
 
 docker-compose.yml をコピーします
 
-	$ cp docker-compose/mstdn-revert-enforce-https.yml docker-compose.yml
+	$ ./mastodon.sh init revert-enforce-https
 
 ## 作成
 
@@ -98,6 +98,7 @@ docker-compose.yml をコピーします
  コマンド              | 内容
 -----------------------|----------
  ./mastodon.sh         | ヘルプ
+ ./mastodon.sh init revert-enforce-https | 初期設定
  ./mastodon.sh create  | 新規作成 
  ./mastodon.sh destroy | 破棄
  ./mastodon.sh up      | 起動
@@ -121,5 +122,4 @@ docker-compose.yml をコピーします
 * [Mastodon: Docker](https://github.com/tootsuite/documentation/blob/master/Running-Mastodon/Docker-Guide.md)
 * [Mastodon: Mastodon Production Guide](https://github.com/tootsuite/documentation/blob/master/Running-Mastodon/Production-guide.md)
 * [DockerHub: mastodon](https://hub.docker.com/r/gargron/mastodon/)
-
 

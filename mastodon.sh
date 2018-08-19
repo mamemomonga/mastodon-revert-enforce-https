@@ -18,6 +18,21 @@ fi
 
 cd $BASEDIR
 
+function do_init {
+	case "${1:-}" in
+
+		"revert-enforce-https" )
+			cp compose/mstdn-revert-enforce-https.yml docker-compose.yml
+			;;
+
+		* )
+			echo "flavor not found"
+			exit 1
+			;;
+
+	esac
+}
+
 function do_create_volumes {
 	for i in postgres redis assets packs system; do
 		local volname=$COMPOSE_PROJECT_NAME'-'$i
@@ -43,7 +58,6 @@ function do_remove_volumes {
 		docker volume rm $volname || true
 	done
 }
-
 
 function do_create {
 	rm -rf  mstdn-revert-enforce-https/assets
@@ -96,7 +110,7 @@ EOS
 
 }
 
-function do_init {
+function do_setup {
 	$DOCKER_COMPOSE run --rm web rails db:setup SAFETY_ASSURED=1
 	$DOCKER_COMPOSE run --rm web rails assets:precompile
 }
@@ -153,10 +167,15 @@ function do_destroy {
 
 case "${1:-}" in
 
+	"init" )
+		do_init ${2:-}
+		echo " *** SUCCESS ***"
+		;;
+
 	"create"  )
 		do_destroy
 		do_create
-		do_init
+		do_setup
 		$DOCKER_COMPOSE up -d
 		echo " *** SUCCESS ***"
 		;;
@@ -207,6 +226,7 @@ case "${1:-}" in
 
 	*  )
 		echo "USAGE:"
+	   	echo "  $0 init revert-enforce-https"
 	   	echo "  $0 [ create | destroy ]"
 	   	echo "  $0 [ backup | restore ]"
 	   	echo "  $0 [ up | down ]"
