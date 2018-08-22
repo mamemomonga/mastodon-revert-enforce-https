@@ -1,0 +1,48 @@
+#!/bin/bash
+set -eu
+
+# utils強制リビルド
+# UTILS_FORCE_REBUILD=1
+
+BASEDIR="$( cd "$( dirname $0 )" && pwd )"
+COMMANDS="up down status tail admin backup volume setup template"
+
+source $BASEDIR/scripts/functions
+
+function do_up {
+	dcr-cmp up -d 
+}
+
+function do_down {
+	dcr-cmp down
+}
+
+function do_status {
+	dcr-cmp ps
+}
+
+function do_tail {
+	dcr-cmp logs -f
+}
+
+function do_admin {
+	exec bash $BASEDIR/scripts/admin.sh $@
+}
+
+function do_backup {
+	exec bash $BASEDIR/scripts/backup.sh $@
+}
+
+function do_volume {
+	exec bash $BASEDIR/scripts/volume.sh $@
+}
+
+function do_setup {
+	exec bash $BASEDIR/scripts/setup.sh $@
+}
+
+function do_template {
+	exec bash $BASEDIR/scripts/template.sh $@
+}
+
+run $@

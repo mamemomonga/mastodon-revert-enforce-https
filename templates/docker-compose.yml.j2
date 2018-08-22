@@ -1,3 +1,5 @@
+# vim:ft=yaml
+
 version: '3'
 
 volumes:
@@ -32,9 +34,9 @@ services:
       - redis:/data
 
   web:
-    # image: tootsuite/mastodon:v2.4.3
-    build: mstdn-revert-enforce-https
  
+    image: {{ JIMAGE }}
+
     restart: always
     env_file: .env.production
     command: bash -c "rm -f /mastodon/tmp/pids/server.pid; bundle exec rails s -p 3000 -b '0.0.0.0'"
@@ -42,11 +44,11 @@ services:
       - external_network
       - internal_network
     ports:
-      - "127.0.0.1:3000:3000"
+      - "3000:3000"
     depends_on:
       - db
       - redis
-      - mailcatcher
+      {% if JMAILCATCHER is defined %}- mailcatcher{% endif %}
 
     volumes:
       - assets:/mastodon/public/assets
@@ -54,8 +56,8 @@ services:
       - system:/mastodon/public/system
 
   streaming:
-    # image: tootsuite/mastodon:v2.4.3
-    build: mstdn-revert-enforce-https
+
+    image: {{ JIMAGE }}
 
     restart: always
     env_file: .env.production
@@ -65,7 +67,7 @@ services:
       - internal_network
 
     ports:
-      - "127.0.0.1:4000:4000"
+      - "4000:4000"
 
     volumes:
       - assets:/mastodon/public/assets
@@ -75,11 +77,11 @@ services:
     depends_on:
       - db
       - redis
-      - mailcatcher
+      {% if JMAILCATCHER is defined %}- mailcatcher{% endif %}
 
   sidekiq:
-    # image: tootsuite/mastodon:v2.4.3
-    build: mstdn-revert-enforce-https
+
+    image: {{ JIMAGE }}
 
     restart: always
     env_file: .env.production
@@ -87,7 +89,7 @@ services:
     depends_on:
       - db
       - redis
-      - mailcatcher
+      {% if JMAILCATCHER is defined %}- mailcatcher{% endif %}
 
     networks:
       - external_network
@@ -97,6 +99,7 @@ services:
       - packs:/mastodon/public/packs
       - system:/mastodon/public/system
 
+{% if JMAILCATCHER is defined %}
   mailcatcher:
     image: yappabe/mailcatcher
     restart: always
@@ -106,4 +109,5 @@ services:
     ports:
       - "1025:1025"
       - "1080:1080"
+{% endif %}
 

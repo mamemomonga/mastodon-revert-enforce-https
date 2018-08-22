@@ -1,0 +1,59 @@
+# vim:ft=sh
+
+function run {
+	source $BASEDIR/.env
+	MASTODON="tootsuite/mastodon:$MSTDN_VER"
+	PERL="docker run --rm -i $DIMG_UTILS perl"
+	CURL="docker run --rm -i $DIMG_UTILS curl"
+
+	if [ -z "$( docker images -q $DIMG_DOCKER_COMPOSE )" ]; then
+		docker pull $DIMG_DOCKER_COMPOSE
+	fi
+
+	if [ -z "$( docker images -q $DIMG_UTILS )" ] || [ -n "${UTILS_FORCE_REBUILD:-}" ] ; then
+		docker build -t $DIMG_UTILS dockerfile/utils
+	fi
+
+	for i in $COMMANDS; do
+		if [ "$i" == "${1:-}" ]; then
+			shift
+			do_$i $@
+			exit 0
+		fi
+	done
+	echo "USAGE: $( basename $0 ) COMMAND"
+	echo "COMMANDS:"
+	for i in $COMMANDS; do
+		echo "   $i"
+	done
+	exit 1
+}
+
+function dcr-cmp {
+	docker run --rm \
+		-v '/var/run/docker.sock:/var/run/docker.sock' \
+		-v $BASEDIR:'/rootfs'$BASEDIR \
+		-w='/rootfs'$BASEDIR \
+		$DIMG_DOCKER_COMPOSE $@
+}
+
+function volume-create {
+    for i in postgres redis assets packs system; do
+        local volname=$COMPOSE_PROJECT_NAME'-'$i
+        echo -n "create named volume: "
+        docker volume create $volname
+    done
+}
+
+function volume-permissions {
+	docker run --rm -it $MASTODON true
+
+    MUID=$( docker run --rm -it $MASTODON id -u | $PERL -npe 's/\r//g' )
+    MGID=$( docker run --rm -it $MASTODON id -g | $PERL -npe 's/\r//g' )
+    docker run --rm -i \
+        -v $COMPOSE_PROJECT_NAME'-assets:/m/assets' \
+        -v $COMPOSE_PROJECT_NAME'-packs:/m/packs' \
+        -v $COMPOSE_PROJECT_NAME'-system:/m/system' \
+        $DIMG_UTILS chown -v -R $MUID:$MGID /m
+}
+
