@@ -2,7 +2,11 @@
 
 function run {
 	source $BASEDIR/.env
-	MASTODON="tootsuite/mastodon:$MSTDN_VER"
+
+	if [ -e "$BASEDIR/.mastodon-image-name" ]; then
+		MASTODON="$(cat $BASEDIR/.mastodon-image-name)"
+	fi
+
 	PERL="docker run --rm -i $DIMG_UTILS perl"
 	CURL="docker run --rm -i $DIMG_UTILS curl"
 

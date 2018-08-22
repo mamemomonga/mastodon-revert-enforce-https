@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eu
 BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-COMMANDS="build db assets"
+COMMANDS="build db assets mastodon_local"
 source $BASEDIR/scripts/functions
 
 function do_build {
@@ -18,13 +18,13 @@ function do_assets {
 }
 
 function do_mastodon_local {
-	$BASEDIR bash mastodon template local
-	$BASEDIR bash mastodon volume create
-	$BASEDIR bash mastodon volume permissions
-	$BASEDIR bash mastodon setup build
-	$BASEDIR bash mastodon setup db
-	$BASEDIR bash mastodon setup assets
-	$BASEDIR bash mastodon up
+	bash $BASEDIR/mastodon template local
+	bash $BASEDIR/mastodon volume create
+	bash $BASEDIR/mastodon volume permissions
+	bash $BASEDIR/mastodon setup build
+	bash $BASEDIR/mastodon setup db
+	bash $BASEDIR/mastodon setup assets
+	bash $BASEDIR/mastodon up
 }
 
 run $@
