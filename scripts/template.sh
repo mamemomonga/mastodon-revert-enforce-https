@@ -2,7 +2,7 @@
 set -eu
 BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 
-COMMANDS="example-env example-compose local standalone clean"
+COMMANDS="example-env example-compose local standalone standalone clean"
 
 source $BASEDIR/scripts/functions
 
@@ -21,13 +21,7 @@ function do_local {
 
 	MSTDN_TYPE=local
 	MAIL_CATCHER=true
-
-	if [ $(uname -m) == 'armv7' ]; then
-		MASTODON="mamemomonga/rpi-mastodon-revert-enforce-https:$MSTDN_VER"
-	else
-		MASTODON="mamemomonga/mastodon-revert-enforce-https:$MSTDN_VER"
-	fi
-
+	MASTODON="mamemomonga/mastodon-revert-enforce-https:$MSTDN_VER"
 	echo $MASTODON > .mastodon-image-name
 
 	docker run --rm \
@@ -41,8 +35,24 @@ function do_local {
 }
 
 function do_standalone {
+	cd $BASEDIR
+	if [ -e 'docker-compose.yml' ]; then echo 'docker-compose.yml already exists.'; exit 1; fi
+	if [ -e '.mastodon-image-name' ]; then echo '.mastodon-image-name already exists.'; exit 1; fi
+
+	MSTDN_TYPE=standalone
+	MAIL_CATCHER=false
 	MASTODON="tootsuite/mastodon:$MSTDN_VER"
-	true
+
+	echo $MASTODON > .mastodon-image-name
+
+	docker run --rm \
+		-v $PWD/templates/docker-compose.yml.j2:/t:ro \
+		-e JIMAGE=$MASTODON \
+		-e JMAILCATCHER=1 \
+		$DIMG_UTILS j2 --format=env /t > docker-compose.yml
+
+	echo "Write: docker-compose.yml"
+	gen_env_prod
 }
 
 function do_clean {
