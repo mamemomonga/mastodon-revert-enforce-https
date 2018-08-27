@@ -94,15 +94,15 @@ docker-compose.yml の ports の 127.0.0.1: をはずすとiptables -A INPUT で
 
  コマンド              | 内容
 -----------------------|----------
- ./mastodon.sh         | ヘルプ
- ./mastodon.sh create  | 新規作成 
- ./mastodon.sh destroy | 破棄
- ./mastodon.sh up      | 起動
- ./mastodon.sh down    | 停止
- ./mastodon.sh shell   | web の /mastodon に入る
- ./mastodon.sh psql    | db の psql に入る
- ./mastodon.sh psql    | logを表示する
- ./mastodon.sh rails ...  | rails のコマンドを実行する
+./mastodon         | ヘルプ
+./mastodon create  | 新規作成 
+./mastodon destroy | 破棄
+./mastodon up      | 起動
+./mastodon down    | 停止
+./mastodon shell   | web の /mastodon に入る
+./mastodon psql    | db の psql に入る
+./mastodon psql    | logを表示する
+./mastodon rails ...  | rails のコマンドを実行する
 
 ### rails コマンドのヘルプ参照
 
@@ -168,6 +168,8 @@ mastodon の DOCKER_COMPOSE を以下のように書き換えます。
 	DOCKER_COMPOSE="mamemomonga/armhf-docker-compose:1.22.0"
 
 あとは Ubuntuと同じです。
+
+なお、SWAPが無効の場合はassetsのビルドに失敗する場合があります。
 
 # 参考資料
 
