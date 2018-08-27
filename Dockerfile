@@ -1,10 +1,13 @@
-FROM tootsuite/mastodon:v2.4.3
 
-ARG MSTDN_VER=v2.4.3
-ARG MSTDN_BERGE_REF=cb9448685907d8a70933f89b047456a7a05c3507
+FROM tootsuite/mastodon:v2.4.5
+
+# for Raspberry Pi
+# FROM mamemomonga/multiarch-armhf-mastodon:v2.4.5
+
+ARG mstdn_ver=v2.4.5
+ARG mstdn_berge_ref=268130a0ccdaf89d8aa47f8d5afa2d3ae92ef08f
 
 USER root
-
 RUN set -xe && \
 	apk --no-cache --update add patch curl git && \
 	mkdir -p /src && \
@@ -14,11 +17,11 @@ USER mastodon
 
 RUN set -xe && \
 	mkdir -p /src && \
-	curl https://raw.githubusercontent.com/tootsuite/mastodon/$MSTDN_VER/.env.production.sample > /mastodon/.env.production.sample && \
+	curl https://raw.githubusercontent.com/tootsuite/mastodon/$mstdn_ver/.env.production.sample > /mastodon/.env.production.sample && \
 	cd /src && \
 	git clone https://github.com/ailispaw/mastodon-barge.git && \
 	cd mastodon-barge && \
-	git checkout -b $MSTDN_VER $MSTDN_BERGE_REF && \
+	git checkout -b $mstdn_ver $mstdn_berge_ref && \
 	cd /mastodon && \
  	for patch in /src/mastodon-barge/patches/*.patch; do \
  		patch -p1 -d /mastodon < ${patch}; \

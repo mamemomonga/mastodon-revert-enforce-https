@@ -1,0 +1,151 @@
+#!/bin/bash
+set -eu
+BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"  && pwd )"
+PERL='docker run --rm -i perl:5-slim perl'
+ALPINE="alpine:3.8"
+MASTODON="mastodon-revert-enforce-https"
+source $BASEDIR/.env
+
+docker run --rm -i perl:5-slim perl -E ''
+docker run --rm $ALPINE test true
+
+if [ -n ${DOCKER_COMPOSE_CONTAINER_VERSION:-} ]; then
+	DOCKER_COMPOSE='docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v '$BASEDIR':/rootfs'$BASEDIR' -w=/rootfs'$BASEDIR' docker/compose:'$DOCKER_COMPOSE_CONTAINER_VERSION
+else
+	DOCKER_COMPOSE='docker-compose'
+fi
+
+cd $BASEDIR
+
+function do_create_volumes {
+	for i in postgres redis assets packs system; do
+		local volname=$COMPOSE_PROJECT_NAME'-'$i
+		echo -n "create named volume: "
+		docker volume create $volname
+	done
+
+	MUID=$( $DOCKER_COMPOSE run --rm web id -u | $PERL -npe 's/\r//g' )
+	MGID=$( $DOCKER_COMPOSE run --rm web id -g | $PERL -npe 's/\r//g' )
+
+	docker run --rm -i \
+		-v $COMPOSE_PROJECT_NAME'-assets:/m/assets' \
+		-v $COMPOSE_PROJECT_NAME'-packs:/m/packs' \
+		-v $COMPOSE_PROJECT_NAME'-system:/m/system' \
+		$ALPINE chown -v -R $MUID:$MGID /m
+
+}
+
+function do_remove_volumes {
+	for i in postgres redis assets packs system; do
+		local volname=$COMPOSE_PROJECT_NAME'-'$i
+		echo -n "remove named volume: "
+		docker volume rm $volname || true
+	done
+}
+
+function do_create {
+	cd $BASEDIR
+	if [ -e '.env.production' ]; then echo '.env.production already exists.'; exit 1; fi 
+
+	docker build -t $MASTODON .
+
+	cat > .env.production << 'EOS'
+RAILS_ENV=production
+
+REDIS_HOST=redis
+REDIS_PORT=6379
+
+DB_HOST=db
+DB_USER=postgres
+DB_NAME=postgres
+DB_PASS=
+DB_PORT=5432
+
+STREAMING_CLUSTER_NUM=1
+
+LOCAL_HTTPS=false
+LOCAL_DOMAIN=localhost:3000
+
+SMTP_SERVER=mailcatcher
+SMTP_PORT=1025
+SMTP_LOGIN=
+SMTP_PASSWORD=
+SMTP_FROM_ADDRESS=notifications@localhost
+SMTP_AUTH_METHOD=none
+
+EOS
+	echo "create secrets."
+	echo 'SECRET_KEY_BASE='$( docker run --rm $MASTODON rake secret ) >> .env.production
+	echo 'OTP_SECRET='$( docker run --rm $MASTODON rake secret ) >> .env.production
+
+	echo "generate_vapid_key."
+	eval $( docker run --rm --env-file=.env.production $MASTODON \
+		rake mastodon:webpush:generate_vapid_key | $PERL -npe 's/^(.+)/local $1/mg' )
+	echo 'VAPID_PRIVATE_KEY='$VAPID_PRIVATE_KEY >> .env.production
+	echo 'VAPID_PUBLIC_KEY='$VAPID_PUBLIC_KEY >> .env.production
+
+	echo "Write: .env.production"
+
+	do_create_volumes
+	$DOCKER_COMPOSE run --rm web rails db:setup SAFETY_ASSURED=1
+	$DOCKER_COMPOSE run --rm web rails assets:precompile
+	$DOCKER_COMPOSE up -d
+}
+
+function do_destroy {
+	if [ -e .env.production ]; then
+		$DOCKER_COMPOSE down || true
+	fi
+	sleep 1
+	do_remove_volumes
+}
+
+
+case "${1:-}" in
+
+	"create"  )
+		do_create
+		echo " *** SUCCESS ***"
+		;;
+
+	"destroy" )
+		do_destroy
+		echo " *** SUCCESS ***"
+		;;
+
+	"up" )
+		exec $DOCKER_COMPOSE up -d
+		;;
+
+	"down" )
+		exec $DOCKER_COMPOSE down
+		;;
+
+	"shell" )
+		exec $DOCKER_COMPOSE exec web sh
+		;;
+
+	"psql" )
+		exec $DOCKER_COMPOSE exec db psql -U postgres postgres
+		;;
+
+	"rails" )
+		shift
+		exec $DOCKER_COMPOSE exec web rails $@
+		;;
+
+	"logs" )
+		exec $DOCKER_COMPOSE logs -f
+		;;
+
+	*  )
+		echo "USAGE:"
+	   	echo "  $0 [ create | destroy ]"
+	   	echo "  $0 [ up | down ]"
+	   	echo "  $0 [ shell | psql | logs ]"
+	   	echo "  $0 rails [rails commands]"
+		exit 1
+		;;
+
+esac
+
