@@ -4,13 +4,17 @@ BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"  && pwd )"
 PERL='docker run --rm -i perl:5-slim perl'
 ALPINE="alpine:3.8"
 MASTODON="mastodon-revert-enforce-https"
+
+DOCKER_COMPOSE="docker/compose:1.22.0"
+# DOCKER_COMPOSE="mamemomonga/armhf-docker-compose:1.22.0"
+
 source $BASEDIR/.env
 
 docker run --rm -i perl:5-slim perl -E ''
 docker run --rm $ALPINE test true
 
 if [ -n ${DOCKER_COMPOSE_CONTAINER_VERSION:-} ]; then
-	DOCKER_COMPOSE='docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v '$BASEDIR':/rootfs'$BASEDIR' -w=/rootfs'$BASEDIR' docker/compose:'$DOCKER_COMPOSE_CONTAINER_VERSION
+	DOCKER_COMPOSE='docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v '$BASEDIR':/rootfs'$BASEDIR' -w=/rootfs'$BASEDIR' '$DOCKER_COMPOSE
 else
 	DOCKER_COMPOSE='docker-compose'
 fi

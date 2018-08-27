@@ -1,7 +1,5 @@
 
 FROM tootsuite/mastodon:v2.4.5
-
-# for Raspberry Pi
 # FROM mamemomonga/multiarch-armhf-mastodon:v2.4.5
 
 ARG mstdn_ver=v2.4.5

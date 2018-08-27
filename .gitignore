@@ -1,4 +1,3 @@
 /var
 /.env.production
 /.env.production.sample
-/docker-compose.yml

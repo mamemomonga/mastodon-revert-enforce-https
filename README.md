@@ -29,7 +29,10 @@ v2.4.3 の mastodon は [productionモードでは https 接続が強制され�
 
 にて動作確認しています。
 
-このツールでの外部への公開や連携は想定されておりませんので動作テスト用としてお使いください。
+# ご注意
+
+このマストドンは外部に公開することは想定されていません。動作の確認はローカルでの実行、もしくはSSHのポートフォワード専用です。
+docker-compose.yml の ports の 127.0.0.1: をはずすとiptables -A INPUT でのアクセス制限を迂回して公開されますのでVPS等で実行される場合はご注意ください。 
 
 # 構築と起動
 
@@ -151,6 +154,20 @@ COSでは mastodon.sh を ./mastodon.sh では実行できません。bash masto
 	$ ssh -L 3000:localhost:3000 -L 1080:localhost:1080 [ユーザ名]@[パスワード]
 
 http://localhost:3000/ でマストドン、http://localhost:1080/ でメール が見えれば成功です。
+
+# Raspberry Pi 3 + Raspbian
+
+Dockerfile の FROMを以下のように書き換えます。
+
+	# FROM tootsuite/mastodon:v2.4.5
+	FROM mamemomonga/multiarch-armhf-mastodon:v2.4.5
+
+mastodon の DOCKER_COMPOSE を以下のように書き換えます。
+
+	# DOCKER_COMPOSE="docker/compose:1.22.0"
+	DOCKER_COMPOSE="mamemomonga/armhf-docker-compose:1.22.0"
+
+あとは Ubuntuと同じです。
 
 # 参考資料
 
