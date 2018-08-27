@@ -28,8 +28,9 @@ function do_create_volumes {
 		docker volume create $volname
 	done
 
-	MUID=$( $DOCKER_COMPOSE run --rm web id -u | $PERL -npe 's/\r//g' )
-	MGID=$( $DOCKER_COMPOSE run --rm web id -g | $PERL -npe 's/\r//g' )
+	MUID=$( docker run --rm $MASTODON id -u | $PERL -npe 's/\r//g' )
+	MGID=$( docker run --rm $MASTODON id -g | $PERL -npe 's/\r//g' )
+	echo "UID:$MUID / GID:$MGID"
 
 	docker run --rm -i \
 		-v $COMPOSE_PROJECT_NAME'-assets:/m/assets' \

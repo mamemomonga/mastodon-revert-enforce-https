@@ -1,4 +1,3 @@
-
 FROM tootsuite/mastodon:v2.4.5
 # FROM mamemomonga/multiarch-armhf-mastodon:v2.4.5
 
