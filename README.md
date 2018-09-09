@@ -1,4 +1,4 @@
-# Docker 版 mastodon を 簡単に動かす
+# Docker 版 mastodon を動かす
 
 # 概要
 
