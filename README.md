@@ -1,4 +1,4 @@
-# Docker 版 mastodon を動かす
+# Docker 版 mastodon を httpで動かす
 
 # 概要
 
@@ -40,7 +40,7 @@ docker-compose.yml の ports の 127.0.0.1: をはずすとiptables -A INPUT で
 
 このリポジトリを取得します。
 
-	$ git clone https://github.com/mamemomonga/mstdn-docker.git
+	$ git clone https://github.com/mamemomonga/mastodon-revert-enforce-https.git
 	$ cd mstdn-docker
 
 ## 作成
