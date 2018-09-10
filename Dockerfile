@@ -1,4 +1,4 @@
-FROM tootsuite/mastodon:v2.4.5
+FROM tootsuite/mastodon:v2.5.0
 # FROM mamemomonga/multiarch-armhf-mastodon:v2.4.5
 
 ARG mstdn_ver=v2.4.5
